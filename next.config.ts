@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    // picsum.photos backs the seeded listing photos (prisma/seed.ts) until
+    // real listing images exist.
+    remotePatterns: [{ hostname: "picsum.photos" }],
+  },
 };
 
 export default nextConfig;
