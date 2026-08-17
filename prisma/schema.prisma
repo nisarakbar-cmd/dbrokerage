@@ -1,0 +1,234 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PropertyType {
+  HOUSE
+  APARTMENT
+  PLOT
+}
+
+enum ListingTier {
+  VERIFIED_FEATURED
+  VERIFIED
+  UNVERIFIED
+}
+
+enum Availability {
+  AVAILABLE
+  UNDER_OFFER
+  SOLD
+  WITHDRAWN
+}
+
+enum SizeUnit {
+  MARLA
+  KANAL
+  SQFT
+}
+
+enum Zone {
+  CDA
+  DHA
+  BAHRIA_TOWN
+  BAHRIA_ENCLAVE
+  PRIVATE_SCHEME
+}
+
+enum LeadSource {
+  REQUEST_VIEWING
+  CONTACT_AGENT
+  SELL
+  HOME_ESTIMATOR
+  MARKET_UPDATES
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  VIEWING_REQUESTED
+  VIEWING_SCHEDULED
+  NEGOTIATION
+  CLOSED
+  LOST
+}
+
+enum ViewingStatus {
+  REQUESTED
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum AdminRole {
+  ADMIN
+  AGENT
+}
+
+enum ActivityType {
+  PHONE_VERIFIED
+  CREATED
+  CONTACTED
+  QUALIFIED
+  VIEWING_REQUESTED
+  VIEWING_SCHEDULED
+  ASSIGNED
+  STATUS_CHANGED
+  NOTE_ADDED
+  CLOSED
+  LOST
+}
+
+model Listing {
+  id           String       @id @default(cuid())
+  slug         String       @unique
+  title        String
+  description  String
+  propertyType PropertyType
+  tier         ListingTier  @default(UNVERIFIED)
+  priceRupees  BigInt // store rupees; format to Crore/Lakh in UI
+  availability Availability @default(AVAILABLE)
+  published    Boolean      @default(false)
+  expiryDate   DateTime? // MANUAL expiry only (no automation)
+
+  // Location (structured for filtering + breadcrumb)
+  city      String  @default("Islamabad")
+  zone      Zone
+  sector    String?
+  phase     String?
+  society   String?
+  subSector String?
+  areaLabel String // e.g. "DHA Phase 2, Islamabad"
+  lat       Float? // nullable — for v1.1 map
+  lng       Float?
+
+  // Specs (beds/baths null for plots)
+  bedrooms  Int?
+  bathrooms Int?
+  sizeValue Float
+  sizeUnit  SizeUnit
+
+  // Verification — STATUS ONLY, no documents
+  verificationChecklistDone Boolean   @default(false)
+  verifiedDate              DateTime?
+  verifiedBy                String?
+  sourceRef                 String? // unverified: source url/person (admin-only)
+  lastCheckedAt             DateTime? // unverified freshness display
+
+  photos    Photo[]
+  leads     Lead[]
+  viewings  Viewing[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Photo {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String?
+  order     Int     @default(0)
+}
+
+model Agent {
+  // assignment target; no login in v1
+  id       String    @id @default(cuid())
+  name     String
+  initials String
+  email    String?
+  active   Boolean   @default(true)
+  leads    Lead[]
+  viewings Viewing[]
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(ADMIN)
+  active       Boolean   @default(true)
+}
+
+model Lead {
+  id               String     @id @default(cuid())
+  source           LeadSource
+  status           LeadStatus @default(NEW)
+  name             String
+  phone            String
+  email            String?
+  phoneVerified    Boolean    @default(false)
+  verifiedAt       DateTime?
+  message          String?
+  propertyInterest String? // free text when no listing (e.g. "Islamabad residential")
+  preferredTime    DateTime? // for REQUEST_VIEWING
+
+  listingId       String?
+  listing         Listing? @relation(fields: [listingId], references: [id])
+  assignedAgentId String?
+  assignedAgent   Agent?   @relation(fields: [assignedAgentId], references: [id])
+
+  notes          LeadNote[]
+  activities     LeadActivity[]
+  viewings       Viewing[]
+  createdAt      DateTime       @default(now())
+  lastActivityAt DateTime       @default(now())
+}
+
+model LeadNote {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  body      String
+  authorId  String?
+  createdAt DateTime @default(now())
+}
+
+model LeadActivity {
+  id        String       @id @default(cuid())
+  leadId    String
+  lead      Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type      ActivityType
+  message   String
+  actorId   String?
+  createdAt DateTime     @default(now())
+}
+
+model Viewing {
+  id          String        @id @default(cuid())
+  leadId      String
+  lead        Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  listingId   String
+  listing     Listing       @relation(fields: [listingId], references: [id])
+  agentId     String?
+  agent       Agent?        @relation(fields: [agentId], references: [id])
+  scheduledAt DateTime?
+  status      ViewingStatus @default(REQUESTED)
+  notes       String?
+  createdAt   DateTime      @default(now())
+}
+
+model OtpChallenge {
+  id         String    @id @default(cuid())
+  phone      String
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone])
+}
