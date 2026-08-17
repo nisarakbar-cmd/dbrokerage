@@ -8,30 +8,32 @@ import { Button } from "@/components/ui/button";
 import { TierBadge } from "@/components/ui/tier-badge";
 import { AvailabilityDot, StatusPill } from "@/components/ui/status-pill";
 import { WhatsAppIcon } from "@/components/ui/icons";
-import { formatPriceRupees, formatSize } from "@/lib/format";
+import { AVAILABILITY_LABEL, formatPriceRupees, formatSize } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const AVAILABILITY_LABEL: Record<Exclude<Listing["availability"], "AVAILABLE">, string> = {
-  UNDER_OFFER: "Under Offer",
-  SOLD: "Sold",
-  WITHDRAWN: "Withdrawn",
-};
-
 export interface PropertyCardListing
-  extends Pick<
-    Listing,
-    | "slug"
-    | "title"
-    | "propertyType"
-    | "tier"
-    | "priceRupees"
-    | "areaLabel"
-    | "bedrooms"
-    | "bathrooms"
-    | "sizeValue"
-    | "sizeUnit"
-    | "availability"
+  extends Omit<
+    Pick<
+      Listing,
+      | "slug"
+      | "title"
+      | "propertyType"
+      | "tier"
+      | "priceRupees"
+      | "areaLabel"
+      | "bedrooms"
+      | "bathrooms"
+      | "sizeValue"
+      | "sizeUnit"
+      | "availability"
+    >,
+    "priceRupees"
   > {
+  // Listing.priceRupees is a Prisma BigInt, which the RSC flight protocol
+  // can't serialize across the server/client boundary — convert to Number
+  // (safe: rupee prices never approach Number.MAX_SAFE_INTEGER) before this
+  // crosses into a Client Component.
+  priceRupees: number;
   photos: Pick<Photo, "url" | "alt">[];
 }
 

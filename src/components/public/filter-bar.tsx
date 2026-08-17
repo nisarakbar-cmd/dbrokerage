@@ -1,3 +1,7 @@
+"use client";
+
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,82 +11,127 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  BEDROOM_OPTIONS,
+  PRICE_BUCKET_OPTIONS,
+  PROPERTY_TYPE_OPTIONS,
+  SIZE_BUCKET_OPTIONS,
+  ZONE_OPTIONS,
+} from "@/lib/filters";
 import { cn } from "@/lib/utils";
 
-// Presentational only — wired to URL params + server-side query in M2.
 export interface FilterBarProps {
   className?: string;
 }
 
-export function FilterBar({ className }: FilterBarProps) {
+// Radix Select items can't have an empty string value — use a sentinel for
+// "any" and strip it back out when building the URL.
+const ANY = "any";
+
+function FilterBarInner({ className }: FilterBarProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [zone, setZone] = useState(searchParams.get("zone") ?? ANY);
+  const [type, setType] = useState(searchParams.get("type") ?? ANY);
+  const [price, setPrice] = useState(searchParams.get("price") ?? ANY);
+  const [bedrooms, setBedrooms] = useState(searchParams.get("bedrooms") ?? ANY);
+  const [size, setSize] = useState(searchParams.get("size") ?? ANY);
+
+  function handleSearch() {
+    const params = new URLSearchParams(searchParams.toString());
+    const apply = (key: string, value: string) => {
+      if (value === ANY) params.delete(key);
+      else params.set(key, value);
+    };
+    apply("zone", zone);
+    apply("type", type);
+    apply("price", price);
+    apply("bedrooms", bedrooms);
+    apply("size", size);
+
+    const query = params.toString();
+    router.push(query ? `/buy?${query}` : "/buy", { scroll: false });
+  }
+
   return (
     <div className={cn("flex flex-wrap items-end gap-3 rounded-xl border border-border bg-bg-surface p-4", className)}>
       <Field label="Location">
-        <Select>
+        <Select value={zone} onValueChange={setZone}>
           <SelectTrigger className="w-full min-w-36 sm:w-auto">
             <SelectValue placeholder="All locations" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="cda">CDA</SelectItem>
-            <SelectItem value="dha">DHA</SelectItem>
-            <SelectItem value="bahria-town">Bahria Town</SelectItem>
-            <SelectItem value="bahria-enclave">Bahria Enclave</SelectItem>
+            <SelectItem value={ANY}>All locations</SelectItem>
+            {ZONE_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>
 
       <Field label="Property type">
-        <Select>
+        <Select value={type} onValueChange={setType}>
           <SelectTrigger className="w-full min-w-32 sm:w-auto">
             <SelectValue placeholder="All types" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="house">House</SelectItem>
-            <SelectItem value="apartment">Apartment</SelectItem>
-            <SelectItem value="plot">Plot</SelectItem>
+            <SelectItem value={ANY}>All types</SelectItem>
+            {PROPERTY_TYPE_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>
 
       <Field label="Price">
-        <Select>
+        <Select value={price} onValueChange={setPrice}>
           <SelectTrigger className="w-full min-w-32 sm:w-auto">
             <SelectValue placeholder="Any price" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="under-50l">Under 50 Lakh</SelectItem>
-            <SelectItem value="50l-1cr">50 Lakh – 1 Crore</SelectItem>
-            <SelectItem value="1cr-5cr">1 – 5 Crore</SelectItem>
-            <SelectItem value="5cr-plus">5 Crore+</SelectItem>
+            <SelectItem value={ANY}>Any price</SelectItem>
+            {PRICE_BUCKET_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>
 
       <Field label="Bedrooms">
-        <Select>
+        <Select value={bedrooms} onValueChange={setBedrooms}>
           <SelectTrigger className="w-full min-w-24 sm:w-auto">
             <SelectValue placeholder="Any" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="1">1+</SelectItem>
-            <SelectItem value="2">2+</SelectItem>
-            <SelectItem value="3">3+</SelectItem>
-            <SelectItem value="4">4+</SelectItem>
-            <SelectItem value="5">5+</SelectItem>
+            <SelectItem value={ANY}>Any</SelectItem>
+            {BEDROOM_OPTIONS.map((n) => (
+              <SelectItem key={n} value={n}>
+                {n}+
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>
 
       <Field label="Size">
-        <Select>
+        <Select value={size} onValueChange={setSize}>
           <SelectTrigger className="w-full min-w-28 sm:w-auto">
             <SelectValue placeholder="Any size" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="5-marla">5 Marla</SelectItem>
-            <SelectItem value="10-marla">10 Marla</SelectItem>
-            <SelectItem value="1-kanal">1 Kanal</SelectItem>
-            <SelectItem value="2-kanal">2 Kanal</SelectItem>
+            <SelectItem value={ANY}>Any size</SelectItem>
+            {SIZE_BUCKET_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>
@@ -92,7 +141,7 @@ export function FilterBar({ className }: FilterBarProps) {
         More filters
       </Button>
 
-      <Button variant="primary" size="sm" className="ml-auto">
+      <Button variant="primary" size="sm" className="ml-auto" onClick={handleSearch}>
         <Search />
         Search
       </Button>
@@ -106,5 +155,17 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="text-xs font-medium tracking-wide text-text-muted uppercase">{label}</span>
       {children}
     </div>
+  );
+}
+
+function FilterBarSkeleton({ className }: FilterBarProps) {
+  return <div className={cn("h-[74px] rounded-xl border border-border bg-bg-surface", className)} />;
+}
+
+export function FilterBar(props: FilterBarProps) {
+  return (
+    <Suspense fallback={<FilterBarSkeleton {...props} />}>
+      <FilterBarInner {...props} />
+    </Suspense>
   );
 }
