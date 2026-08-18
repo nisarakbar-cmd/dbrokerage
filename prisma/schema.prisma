@@ -91,6 +91,19 @@ enum ActivityType {
   LOST
 }
 
+enum ListingAuditType {
+  CREATED
+  UPDATED
+  PUBLISHED
+  UNPUBLISHED
+  TIER_CHANGED
+  VERIFICATION_UPDATED
+  AVAILABILITY_CHANGED
+  PRICE_CHANGED
+  ARCHIVED
+  RESTORED
+}
+
 model Listing {
   id           String       @id @default(cuid())
   slug         String       @unique
@@ -120,18 +133,26 @@ model Listing {
   sizeValue Float
   sizeUnit  SizeUnit
 
-  // Verification — STATUS ONLY, no documents
+  // Verification — STATUS ONLY, no documents. verificationChecklistDone is
+  // DERIVED from verificationChecklist (true once every required item is
+  // checked) — see lib/verification-checklist.ts.
+  verificationChecklist     Json? // structured checklist item states
   verificationChecklistDone Boolean   @default(false)
   verifiedDate              DateTime?
   verifiedBy                String?
   sourceRef                 String? // unverified: source url/person (admin-only)
   lastCheckedAt             DateTime? // unverified freshness display
 
+  // Soft-delete: Lead/Viewing reference listings by id, so archiving
+  // (not a hard delete) preserves those FKs and the audit history.
+  archivedAt DateTime?
+
   photos    Photo[]
   leads     Lead[]
   viewings  Viewing[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  auditLog  ListingAudit[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 }
 
 model Photo {
@@ -141,6 +162,18 @@ model Photo {
   url       String
   alt       String?
   order     Int     @default(0)
+}
+
+model ListingAudit {
+  id        String           @id @default(cuid())
+  listingId String
+  listing   Listing          @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  type      ListingAuditType
+  message   String
+  actorId   String?
+  createdAt DateTime         @default(now())
+
+  @@index([listingId])
 }
 
 model Agent {

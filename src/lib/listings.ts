@@ -53,9 +53,10 @@ function parseNumberParam(value?: string): number | undefined {
 }
 
 /** Base visibility rule for every public listing query — never show
- * unpublished or withdrawn inventory. */
+ * unpublished, archived, or withdrawn inventory. */
 const PUBLIC_WHERE: Prisma.ListingWhereInput = {
   published: true,
+  archivedAt: null,
   availability: { not: "WITHDRAWN" },
 };
 

@@ -177,8 +177,14 @@ function VerificationNote({
 
   return (
     <div className="rounded-xl border border-border bg-bg-elevated p-4 text-sm text-text-muted">
-      <p className="font-medium text-text">Verified by dBrokerage</p>
-      {verifiedDate && <p className="mt-1">Verified {formatDate(verifiedDate)}.</p>}
+      <p className="font-medium text-text">
+        Verified by dBrokerage{verifiedDate ? ` as of ${formatDate(verifiedDate)}` : ""}
+      </p>
+      <p className="mt-1">
+        dBrokerage has checked the items in its verification standard as of the stated date —
+        eligibility, seller identity, listing authority, a document review, a physical visit,
+        and current availability &amp; price. This is not a title guarantee or ownership warranty.
+      </p>
     </div>
   );
 }
