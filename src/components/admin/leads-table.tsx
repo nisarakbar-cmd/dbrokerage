@@ -67,6 +67,17 @@ function LeadsTableInner({ data, agents, selectedLeadId, onRowClick }: LeadsTabl
     pushParams({ source, agent: agentId, status, verified, search });
   }
 
+  function clearFilters() {
+    setSource(ANY);
+    setAgentId(ANY);
+    setStatus(ANY);
+    setVerified(ANY);
+    setSearch("");
+    router.push("/admin/leads", { scroll: false });
+  }
+
+  const hasActiveFilters = ["source", "agent", "status", "verified", "search"].some((k) => searchParams.has(k));
+
   function goToPage(page: number) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", String(page));
@@ -171,16 +182,30 @@ function LeadsTableInner({ data, agents, selectedLeadId, onRowClick }: LeadsTabl
             {data.leads.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="py-8 text-center text-sm text-text-muted">
-                  No leads match these filters.
+                  <p>No leads match these filters.</p>
+                  {hasActiveFilters && (
+                    <Button variant="outline" size="sm" className="mt-3" onClick={clearFilters}>
+                      Clear filters
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             )}
             {data.leads.map((lead) => (
               <TableRow
                 key={lead.id}
+                tabIndex={0}
+                role="button"
+                aria-label={`Open ${lead.name}`}
                 onClick={() => onRowClick(lead.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onRowClick(lead.id);
+                  }
+                }}
                 className={cn(
-                  "cursor-pointer",
+                  "cursor-pointer outline-none focus-visible:bg-bg-elevated focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
                   selectedLeadId === lead.id && "bg-bg-elevated"
                 )}
               >

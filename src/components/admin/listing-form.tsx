@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import type { Availability, ListingTier } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,15 +110,19 @@ export function ListingForm({ mode, initialData }: ListingFormProps) {
       const result = await createListing(values);
       if (!result.ok) {
         setSaveError(result.error);
+        toast.error(result.error);
         return;
       }
+      toast.success("Listing created.");
       router.push(`/admin/listings/${result.id}/edit`);
     } else if (initialData) {
       const result = await updateListing(initialData.id, values);
       if (!result.ok) {
         setSaveError(result.error);
+        toast.error(result.error);
         return;
       }
+      toast.success("Changes saved.");
       router.refresh();
     }
   }
@@ -133,32 +138,31 @@ export function ListingForm({ mode, initialData }: ListingFormProps) {
   );
   const [verifiedDate, setVerifiedDate] = useState<string | null>(initialData?.verifiedDate ?? null);
   const [verifiedBy, setVerifiedBy] = useState<string | null>(initialData?.verifiedBy ?? null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleTierChange(next: string) {
     if (!initialData) return;
-    setActionError(null);
     startTransition(async () => {
       const result = await setListingTier(initialData.id, next as ListingTier);
       if (!result.ok) {
-        setActionError(result.error);
+        toast.error(result.error);
         return;
       }
+      toast.success("Tier updated.");
       setTier(next as ListingTier);
     });
   }
 
   function handleSaveChecklist() {
     if (!initialData) return;
-    setActionError(null);
     const complete = isChecklistComplete(checklist);
     startTransition(async () => {
       const result = await setVerificationChecklist(initialData.id, checklist);
       if (!result.ok) {
-        setActionError(result.error);
+        toast.error(result.error);
         return;
       }
+      toast.success(complete ? "Verification checklist completed." : "Checklist saved.");
       if (complete) {
         setVerifiedDate((d) => d ?? new Date().toISOString());
       } else {
@@ -171,26 +175,26 @@ export function ListingForm({ mode, initialData }: ListingFormProps) {
 
   function handleTogglePublish() {
     if (!initialData) return;
-    setActionError(null);
     startTransition(async () => {
       const result = published ? await unpublishListing(initialData.id) : await publishListing(initialData.id);
       if (!result.ok) {
-        setActionError(result.error);
+        toast.error(result.error);
         return;
       }
+      toast.success(published ? "Listing unpublished." : "Listing published.");
       setPublished((v) => !v);
     });
   }
 
   function handleAvailabilityChange(next: string) {
     if (!initialData) return;
-    setActionError(null);
     startTransition(async () => {
       const result = await setAvailability(initialData.id, next as Availability);
       if (!result.ok) {
-        setActionError(result.error);
+        toast.error(result.error);
         return;
       }
+      toast.success("Availability updated.");
       setAvailabilityState(next as Availability);
     });
   }
@@ -416,8 +420,6 @@ export function ListingForm({ mode, initialData }: ListingFormProps) {
             <FormField label="Manual expiry date (optional)">
               <Input {...form.register("expiryDate")} type="date" />
             </FormField>
-
-            {actionError && <p className="text-sm text-destructive">{actionError}</p>}
           </Section>
         </>
       )}

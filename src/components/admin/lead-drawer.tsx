@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { toast } from "sonner";
 import {
   CalendarCheck,
   CalendarClock,
@@ -33,8 +34,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatRelativeTime } from "@/lib/format";
-import { LEAD_SOURCE_LABEL, LEAD_STATUS_VALUES, STATUS_COLOR, STATUS_LABEL } from "@/lib/pipeline";
-import type { LeadSource } from "@prisma/client";
+import {
+  LEAD_SOURCE_LABEL,
+  LEAD_STATUS_VALUES,
+  STATUS_COLOR,
+  STATUS_LABEL,
+  VIEWING_STATUS_LABEL,
+} from "@/lib/pipeline";
+import type { LeadSource, ViewingStatus } from "@prisma/client";
 import {
   addLeadNote,
   assignLead,
@@ -95,7 +102,12 @@ export function LeadDrawer({ leadId, agents, onClose }: LeadDrawerProps) {
   function handleStageChange(status: string) {
     if (!detail) return;
     startTransition(async () => {
-      await setLeadStage(detail.id, status as LeadDetail["status"]);
+      const result = await setLeadStage(detail.id, status as LeadDetail["status"]);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`Stage changed to ${STATUS_LABEL[status as LeadDetail["status"]]}.`);
       await refresh(detail.id);
     });
   }
@@ -103,7 +115,13 @@ export function LeadDrawer({ leadId, agents, onClose }: LeadDrawerProps) {
   function handleAssignChange(agentId: string) {
     if (!detail) return;
     startTransition(async () => {
-      await assignLead(detail.id, agentId === UNASSIGNED ? null : agentId);
+      const result = await assignLead(detail.id, agentId === UNASSIGNED ? null : agentId);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      const agentName = agents.find((a) => a.id === agentId)?.name;
+      toast.success(agentName ? `Assigned to ${agentName}.` : "Unassigned.");
       await refresh(detail.id);
     });
   }
@@ -112,7 +130,12 @@ export function LeadDrawer({ leadId, agents, onClose }: LeadDrawerProps) {
     if (!detail || !viewingDate || !viewingTime) return;
     const scheduledAt = new Date(`${viewingDate}T${viewingTime}`).toISOString();
     startTransition(async () => {
-      await scheduleViewing(detail.id, scheduledAt);
+      const result = await scheduleViewing(detail.id, scheduledAt);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Viewing scheduled.");
       setViewingDate("");
       setViewingTime("");
       await refresh(detail.id);
@@ -122,7 +145,12 @@ export function LeadDrawer({ leadId, agents, onClose }: LeadDrawerProps) {
   function handleSaveNote() {
     if (!detail || !noteBody.trim()) return;
     startTransition(async () => {
-      await addLeadNote(detail.id, noteBody.trim());
+      const result = await addLeadNote(detail.id, noteBody.trim());
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Note saved.");
       setNoteBody("");
       await refresh(detail.id);
     });
@@ -223,7 +251,7 @@ export function LeadDrawer({ leadId, agents, onClose }: LeadDrawerProps) {
                 {detail.viewing ? (
                   <div className="flex items-center justify-between rounded-lg border border-border bg-bg-elevated px-3 py-2.5 text-sm">
                     <span className="text-text">
-                      {STATUS_LABEL[detail.viewing.status === "REQUESTED" ? "VIEWING_REQUESTED" : "VIEWING_SCHEDULED"]}
+                      {VIEWING_STATUS_LABEL[detail.viewing.status as ViewingStatus]}
                     </span>
                     <span className="text-text-muted">
                       {detail.viewing.scheduledAt

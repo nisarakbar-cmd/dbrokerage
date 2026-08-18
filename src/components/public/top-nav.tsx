@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ExternalLink, Menu, X } from "lucide-react";
+import { ExternalLink, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MarketUpdatesDialog } from "@/components/public/market-updates-dialog";
 import { cn } from "@/lib/utils";
 
@@ -33,9 +34,13 @@ function NavLink({ href, label, onNavigate }: { href: string; label: string; onN
 }
 
 function InvestLink({ className }: { className?: string }) {
+  const investUrl = process.env.NEXT_PUBLIC_INVEST_URL;
+  // Degrade gracefully when unset — no dead "#" link.
+  if (!investUrl) return null;
+
   return (
     <a
-      href={process.env.NEXT_PUBLIC_INVEST_URL || "#"}
+      href={investUrl}
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
@@ -52,13 +57,6 @@ function InvestLink({ className }: { className?: string }) {
 export function TopNav() {
   const [open, setOpen] = useState(false);
   const [marketUpdatesOpen, setMarketUpdatesOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg-base/95 backdrop-blur-sm">
@@ -83,71 +81,53 @@ export function TopNav() {
           </Button>
         </div>
 
-        <button
-          type="button"
-          aria-label="Toggle menu"
-          aria-expanded={open}
-          aria-controls="mobile-nav-drawer"
-          className="inline-flex size-9 items-center justify-center rounded-lg text-text md:hidden"
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? <X className="size-5" /> : <Menu className="size-5" />}
-        </button>
+        <Button variant="ghost" size="icon" aria-label="Open menu" className="md:hidden" onClick={() => setOpen(true)}>
+          <Menu className="size-5" />
+        </Button>
       </div>
 
-      {/* Mobile slide-in drawer */}
-      <div
-        className={cn(
-          "fixed inset-0 z-50 bg-black/60 transition-opacity motion-reduce:transition-none md:hidden",
-          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
-        )}
-        onClick={() => setOpen(false)}
-        aria-hidden={!open}
-      >
-        <div
-          id="mobile-nav-drawer"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menu"
-          className={cn(
-            "absolute top-0 right-0 flex h-full w-72 flex-col gap-1 border-l border-border bg-bg-surface p-6 transition-transform motion-reduce:transition-none",
-            open ? "translate-x-0" : "translate-x-full"
-          )}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {NAV_LINKS.map((link) => (
+      {/* Radix-based Sheet — focus trap, Escape-to-close, and focus-return
+          to the trigger all come for free (§12 accessibility floor). */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="right" className="w-72 sm:max-w-72">
+          <SheetHeader>
+            <SheetTitle>Menu</SheetTitle>
+          </SheetHeader>
+          <nav aria-label="Mobile" className="flex flex-col gap-1 px-4 pb-4">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className="rounded-lg px-2 py-2.5 text-sm font-medium text-text hover:bg-bg-elevated"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <InvestLink className="rounded-lg px-2 py-2.5 hover:bg-bg-elevated" />
+
+            <div className="my-3 border-t border-border" />
+
             <Link
-              key={link.href}
-              href={link.href}
+              href="/admin/login"
               onClick={() => setOpen(false)}
               className="rounded-lg px-2 py-2.5 text-sm font-medium text-text hover:bg-bg-elevated"
             >
-              {link.label}
+              Log In
             </Link>
-          ))}
-          <InvestLink className="rounded-lg px-2 py-2.5 hover:bg-bg-elevated" />
-
-          <div className="my-3 border-t border-border" />
-
-          <Link
-            href="/admin/login"
-            onClick={() => setOpen(false)}
-            className="rounded-lg px-2 py-2.5 text-sm font-medium text-text hover:bg-bg-elevated"
-          >
-            Log In
-          </Link>
-          <Button
-            variant="outline"
-            className="mt-2 w-full"
-            onClick={() => {
-              setOpen(false);
-              setMarketUpdatesOpen(true);
-            }}
-          >
-            Sign Up
-          </Button>
-        </div>
-      </div>
+            <Button
+              variant="outline"
+              className="mt-2 w-full"
+              onClick={() => {
+                setOpen(false);
+                setMarketUpdatesOpen(true);
+              }}
+            >
+              Sign Up
+            </Button>
+          </nav>
+        </SheetContent>
+      </Sheet>
 
       <MarketUpdatesDialog open={marketUpdatesOpen} onOpenChange={setMarketUpdatesOpen} />
     </header>

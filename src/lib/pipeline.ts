@@ -1,4 +1,18 @@
-import type { LeadSource, LeadStatus } from "@prisma/client";
+import type { LeadSource, LeadStatus, ViewingStatus } from "@prisma/client";
+
+export const VIEWING_STATUS_LABEL: Record<ViewingStatus, string> = {
+  REQUESTED: "Requested",
+  SCHEDULED: "Scheduled",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+export const VIEWING_STATUS_COLOR: Record<ViewingStatus, string> = {
+  REQUESTED: "var(--pipeline-viewing)",
+  SCHEDULED: "var(--pipeline-qualified)",
+  COMPLETED: "var(--pipeline-closed)",
+  CANCELLED: "var(--pipeline-lost)",
+};
 
 export const LEAD_SOURCE_LABEL: Record<LeadSource, string> = {
   REQUEST_VIEWING: "Request Viewing",

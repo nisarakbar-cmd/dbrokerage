@@ -62,6 +62,7 @@ export function PhotoEditor({ fieldArray, register, watch }: PhotoEditorProps) {
                 variant="ghost"
                 size="icon-xs"
                 title="Make primary"
+                aria-label="Make primary photo"
                 disabled={index === 0}
                 onClick={() => move(index, 0)}
               >
@@ -72,6 +73,7 @@ export function PhotoEditor({ fieldArray, register, watch }: PhotoEditorProps) {
                 variant="ghost"
                 size="icon-xs"
                 title="Move up"
+                aria-label="Move photo up"
                 disabled={index === 0}
                 onClick={() => move(index, index - 1)}
               >
@@ -82,13 +84,21 @@ export function PhotoEditor({ fieldArray, register, watch }: PhotoEditorProps) {
                 variant="ghost"
                 size="icon-xs"
                 title="Move down"
+                aria-label="Move photo down"
                 disabled={index === fields.length - 1}
                 onClick={() => move(index, index + 1)}
               >
                 ↓
               </Button>
             </div>
-            <Button type="button" variant="ghost" size="icon-sm" title="Remove" onClick={() => remove(index)}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              title="Remove"
+              aria-label="Remove photo"
+              onClick={() => remove(index)}
+            >
               <Trash2 className="size-4 text-destructive" />
             </Button>
           </div>

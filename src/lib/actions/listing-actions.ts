@@ -12,6 +12,7 @@ import {
   type VerificationChecklist,
 } from "@/lib/verification-checklist";
 import { formatPriceRupees } from "@/lib/format";
+import type { ActionResult } from "@/lib/action-result";
 
 const RUPEES_PER_CRORE = 10_000_000;
 
@@ -27,13 +28,6 @@ const AVAILABILITY_LABEL_FULL: Record<Availability, string> = {
   SOLD: "Sold",
   WITHDRAWN: "Withdrawn",
 };
-
-// Next.js redacts thrown Error messages from Server Actions in production
-// builds (the client only receives an opaque digest) — so expected,
-// user-actionable failures (validation, gating rules) must be returned as
-// a value, not thrown. Throwing is reserved for truly unexpected bugs,
-// where a generic client-side fallback message is fine.
-export type ActionResult<T extends object = object> = ({ ok: true } & T) | { ok: false; error: string };
 
 function revalidatePublic(slug?: string, previousSlug?: string) {
   revalidatePath("/");

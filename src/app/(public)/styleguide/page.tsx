@@ -1,4 +1,6 @@
 import { Calendar, Search } from "lucide-react";
+import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { TierBadge } from "@/components/ui/tier-badge";
 import { AvailabilityDot, StatusPill } from "@/components/ui/status-pill";
@@ -8,8 +10,9 @@ import { FilterBar } from "@/components/public/filter-bar";
 import { LocationBreadcrumb } from "@/components/public/location-breadcrumb";
 import { TrustStrip } from "@/components/public/trust-strip";
 
-// Dev aid — a living reference of every M1 component and variant.
-// Remove or gate behind an env check before launch.
+// Dev aid — a living reference of every M1 component and variant. Gated
+// behind admin auth below (see StyleguidePage) so it's never publicly
+// reachable in production.
 
 const PIPELINE_STAGES = [
   { label: "New", color: "var(--pipeline-new)" },
@@ -104,7 +107,12 @@ function Section({
   );
 }
 
-export default function StyleguidePage() {
+// Dev aid, gated behind admin auth — not publicly reachable (404s for
+// anyone who isn't signed in as ADMIN, rather than being a public route).
+export default async function StyleguidePage() {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") notFound();
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       <div className="border-b border-border pb-8">
@@ -114,8 +122,7 @@ export default function StyleguidePage() {
         <h1 className="mt-2 text-4xl font-semibold text-text">Design system</h1>
         <p className="mt-2 max-w-2xl text-base text-text-muted">
           Every M1 component and variant, rendered with sample data. Static and
-          presentational — buttons here are no-ops. Remove or gate this route
-          before launch.
+          presentational — buttons here are no-ops. Admin-only: gated below.
         </p>
       </div>
 

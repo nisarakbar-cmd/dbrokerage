@@ -4,6 +4,7 @@ import { Suspense, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Pencil } from "lucide-react";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -26,13 +27,8 @@ import { StatusPill } from "@/components/ui/status-pill";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/filters";
 import { formatDate, formatPriceRupees } from "@/lib/format";
 import type { AdminListingsPage } from "@/lib/admin-listings";
-import {
-  archiveListing,
-  publishListing,
-  restoreListing,
-  unpublishListing,
-  type ActionResult,
-} from "@/lib/actions/listing-actions";
+import { archiveListing, publishListing, restoreListing, unpublishListing } from "@/lib/actions/listing-actions";
+import type { ActionResult } from "@/lib/action-result";
 import { cn } from "@/lib/utils";
 
 const ANY = "any";
@@ -62,7 +58,6 @@ function ListingsTableInner({ data }: { data: AdminListingsPage }) {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
 
   const [tier, setTier] = useState(searchParams.get("tier") ?? ANY);
   const [availability, setAvailability] = useState(searchParams.get("availability") ?? ANY);
@@ -90,18 +85,29 @@ function ListingsTableInner({ data }: { data: AdminListingsPage }) {
     pushParams({ archived: showArchived ? null : "true" });
   }
 
+  function clearFilters() {
+    setTier(ANY);
+    setAvailability(ANY);
+    setType(ANY);
+    setPublished(ANY);
+    setSearch("");
+    router.push("/admin/listings", { scroll: false });
+  }
+
+  const hasActiveFilters = ["tier", "availability", "type", "published", "search"].some((k) => searchParams.has(k));
+
   function goToPage(page: number) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", String(page));
     router.push(`/admin/listings?${params.toString()}`, { scroll: false });
   }
 
-  function runAction(id: string, action: () => Promise<ActionResult>) {
+  function runAction(id: string, action: () => Promise<ActionResult>, successMessage: string) {
     setPendingId(id);
-    setActionError(null);
     startTransition(async () => {
       const result = await action();
-      if (!result.ok) setActionError(result.error);
+      if (!result.ok) toast.error(result.error);
+      else toast.success(successMessage);
       setPendingId(null);
     });
   }
@@ -191,8 +197,6 @@ function ListingsTableInner({ data }: { data: AdminListingsPage }) {
         </Button>
       </div>
 
-      {actionError && <p className="text-sm text-destructive">{actionError}</p>}
-
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -211,7 +215,12 @@ function ListingsTableInner({ data }: { data: AdminListingsPage }) {
             {data.listings.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} className="py-8 text-center text-sm text-text-muted">
-                  No listings match these filters.
+                  <p>No listings match these filters.</p>
+                  {hasActiveFilters && (
+                    <Button variant="outline" size="sm" className="mt-3" onClick={clearFilters}>
+                      Clear filters
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             )}
@@ -244,7 +253,7 @@ function ListingsTableInner({ data }: { data: AdminListingsPage }) {
                   <TableCell>
                     <div className="flex items-center justify-end gap-2">
                       <Link href={`/admin/listings/${listing.id}/edit`}>
-                        <Button variant="ghost" size="icon-sm" title="Edit">
+                        <Button variant="ghost" size="icon-sm" title="Edit" aria-label={`Edit ${listing.title}`}>
                           <Pencil className="size-4" />
                         </Button>
                       </Link>
@@ -254,8 +263,10 @@ function ListingsTableInner({ data }: { data: AdminListingsPage }) {
                           size="sm"
                           disabled={rowPending}
                           onClick={() =>
-                            runAction(listing.id, () =>
-                              listing.published ? unpublishListing(listing.id) : publishListing(listing.id)
+                            runAction(
+                              listing.id,
+                              () => (listing.published ? unpublishListing(listing.id) : publishListing(listing.id)),
+                              listing.published ? "Listing unpublished." : "Listing published."
                             )
                           }
                         >
@@ -267,8 +278,10 @@ function ListingsTableInner({ data }: { data: AdminListingsPage }) {
                         size="sm"
                         disabled={rowPending}
                         onClick={() =>
-                          runAction(listing.id, () =>
-                            isArchived ? restoreListing(listing.id) : archiveListing(listing.id)
+                          runAction(
+                            listing.id,
+                            () => (isArchived ? restoreListing(listing.id) : archiveListing(listing.id)),
+                            isArchived ? "Listing restored." : "Listing archived."
                           )
                         }
                       >
