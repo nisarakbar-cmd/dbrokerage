@@ -563,12 +563,18 @@ async function main() {
 
   console.log("Seeding leads...");
 
-  const sara = await prisma.lead.create({
-    data: {
+  // Deterministic ids + upsert (matching the agent/admin pattern above) so
+  // `npm run seed` stays safe to re-run — this used to `create()` unconditionally
+  // and double up every lead (incl. Sara Khan) on a second seed pass.
+  const sara = await prisma.lead.upsert({
+    where: { id: "lead-sara-khan" },
+    update: {},
+    create: {
+      id: "lead-sara-khan",
       source: "REQUEST_VIEWING",
       status: "VIEWING_REQUESTED",
       name: "Sara Khan",
-      phone: "+92 300 1234567",
+      phone: "+923001234567",
       phoneVerified: true,
       verifiedAt: daysAgo(2),
       message: "Interested in scheduling a viewing this weekend.",
@@ -585,20 +591,24 @@ async function main() {
   });
 
   await prisma.leadActivity.createMany({
+    skipDuplicates: true,
     data: [
       {
+        id: "activity-sara-1",
         leadId: sara.id,
         type: "PHONE_VERIFIED",
         message: "Phone number verified via OTP.",
         createdAt: daysAgo(2),
       },
       {
+        id: "activity-sara-2",
         leadId: sara.id,
         type: "VIEWING_REQUESTED",
         message: "Requested a viewing for DHA Phase 2 · PKR 8.75 Crore.",
         createdAt: daysAgo(2),
       },
       {
+        id: "activity-sara-3",
         leadId: sara.id,
         type: "ASSIGNED",
         message: "Assigned to Ahmed Raza.",
@@ -607,33 +617,43 @@ async function main() {
     ],
   });
 
-  await prisma.leadNote.create({
-    data: {
+  await prisma.leadNote.upsert({
+    where: { id: "note-sara-1" },
+    update: {},
+    create: {
+      id: "note-sara-1",
       leadId: sara.id,
       body: "Prefers an evening visit. Financing pre-approved.",
     },
   });
 
-  await prisma.lead.create({
-    data: {
+  await prisma.lead.upsert({
+    where: { id: "lead-hamza-ali" },
+    update: {},
+    create: {
+      id: "lead-hamza-ali",
       source: "CONTACT_AGENT",
       status: "NEW",
       name: "Hamza Ali",
-      phone: "+92 301 2345678",
+      phone: "+923012345678",
       phoneVerified: true,
       verifiedAt: daysAgo(1),
       message: "Please share more details about this apartment.",
       listingId: listingIdBySlug.get("f-11-1-apartment-4-20cr"),
       createdAt: daysAgo(1),
+      lastActivityAt: daysAgo(1),
     },
   });
 
-  await prisma.lead.create({
-    data: {
+  await prisma.lead.upsert({
+    where: { id: "lead-mariam-ahmed" },
+    update: {},
+    create: {
+      id: "lead-mariam-ahmed",
       source: "SELL",
       status: "CONTACTED",
       name: "Mariam Ahmed",
-      phone: "+92 302 3456789",
+      phone: "+923023456789",
       phoneVerified: true,
       verifiedAt: daysAgo(6),
       propertyInterest: "E-11/4, Islamabad",
@@ -644,12 +664,15 @@ async function main() {
     },
   });
 
-  await prisma.lead.create({
-    data: {
+  await prisma.lead.upsert({
+    where: { id: "lead-usman-tariq" },
+    update: {},
+    create: {
+      id: "lead-usman-tariq",
       source: "HOME_ESTIMATOR",
       status: "QUALIFIED",
       name: "Usman Tariq",
-      phone: "+92 303 4567890",
+      phone: "+923034567890",
       phoneVerified: true,
       verifiedAt: daysAgo(4),
       propertyInterest: "Bahria Town Phase 7",
@@ -659,16 +682,149 @@ async function main() {
     },
   });
 
-  await prisma.lead.create({
-    data: {
+  await prisma.lead.upsert({
+    where: { id: "lead-noor-shah" },
+    update: {},
+    create: {
+      id: "lead-noor-shah",
       source: "MARKET_UPDATES",
       status: "NEW",
       name: "Noor Shah",
-      phone: "+92 304 5678901",
+      phone: "+923045678901",
       phoneVerified: true,
       verifiedAt: daysAgo(1),
       propertyInterest: "Islamabad residential",
       assignedAgentId: sana.id,
+      createdAt: daysAgo(1),
+      lastActivityAt: daysAgo(1),
+    },
+  });
+
+  // A few extra demo leads (clearly seed data) so every pipeline column and
+  // filter combination has something to show — Negotiation / Closed / Lost
+  // aren't otherwise covered by the 5 canonical leads above, and none of
+  // them exercise VIEWING_SCHEDULED (an already-scheduled viewing).
+  const bilal = await prisma.lead.upsert({
+    where: { id: "lead-bilal-sheikh" },
+    update: {},
+    create: {
+      id: "lead-bilal-sheikh",
+      source: "REQUEST_VIEWING",
+      status: "NEGOTIATION",
+      name: "Bilal Sheikh",
+      phone: "+923056789012",
+      phoneVerified: true,
+      verifiedAt: daysAgo(9),
+      message: "Very interested — discussing price.",
+      listingId: listingIdBySlug.get("dha-phase-1-house-7-50cr"),
+      assignedAgentId: sana.id,
+      createdAt: daysAgo(9),
+      lastActivityAt: daysAgo(2),
+    },
+  });
+  await prisma.leadActivity.createMany({
+    skipDuplicates: true,
+    data: [
+      { id: "activity-bilal-1", leadId: bilal.id, type: "PHONE_VERIFIED", message: "Phone number verified via OTP.", createdAt: daysAgo(9) },
+      { id: "activity-bilal-2", leadId: bilal.id, type: "VIEWING_REQUESTED", message: "Requested a viewing for DHA Phase 1 · PKR 7.50 Crore.", createdAt: daysAgo(9) },
+      { id: "activity-bilal-3", leadId: bilal.id, type: "STATUS_CHANGED", message: "Stage changed to Negotiation.", createdAt: daysAgo(2) },
+    ],
+  });
+
+  const ayesha = await prisma.lead.upsert({
+    where: { id: "lead-ayesha-malik" },
+    update: {},
+    create: {
+      id: "lead-ayesha-malik",
+      source: "CONTACT_AGENT",
+      status: "CLOSED",
+      name: "Ayesha Malik",
+      phone: "+923067890123",
+      phoneVerified: true,
+      verifiedAt: daysAgo(20),
+      message: "Ready to proceed.",
+      listingId: listingIdBySlug.get("f-10-3-house-5-20cr"),
+      assignedAgentId: ahmed.id,
+      createdAt: daysAgo(20),
+      lastActivityAt: daysAgo(3),
+    },
+  });
+  await prisma.leadActivity.createMany({
+    skipDuplicates: true,
+    data: [
+      { id: "activity-ayesha-1", leadId: ayesha.id, type: "PHONE_VERIFIED", message: "Phone number verified via OTP.", createdAt: daysAgo(20) },
+      { id: "activity-ayesha-2", leadId: ayesha.id, type: "CREATED", message: "Requested contact about 4-Bedroom House in F-10/3.", createdAt: daysAgo(20) },
+      { id: "activity-ayesha-3", leadId: ayesha.id, type: "CLOSED", message: "Deal closed.", createdAt: daysAgo(3) },
+    ],
+  });
+
+  const kamran = await prisma.lead.upsert({
+    where: { id: "lead-kamran-yousaf" },
+    update: {},
+    create: {
+      id: "lead-kamran-yousaf",
+      source: "CONTACT_AGENT",
+      status: "LOST",
+      name: "Kamran Yousaf",
+      phone: "+923078901234",
+      phoneVerified: true,
+      verifiedAt: daysAgo(15),
+      message: "Went with another agency.",
+      listingId: listingIdBySlug.get("g-9-plot-1-20cr"),
+      assignedAgentId: sana.id,
+      createdAt: daysAgo(15),
+      lastActivityAt: daysAgo(4),
+    },
+  });
+  await prisma.leadActivity.createMany({
+    skipDuplicates: true,
+    data: [
+      { id: "activity-kamran-1", leadId: kamran.id, type: "PHONE_VERIFIED", message: "Phone number verified via OTP.", createdAt: daysAgo(15) },
+      { id: "activity-kamran-2", leadId: kamran.id, type: "CREATED", message: "Requested contact about 6 Marla Residential Plot in G-9.", createdAt: daysAgo(15) },
+      { id: "activity-kamran-3", leadId: kamran.id, type: "LOST", message: "Lead marked lost.", createdAt: daysAgo(4) },
+    ],
+  });
+
+  const fatima = await prisma.lead.upsert({
+    where: { id: "lead-fatima-nasir" },
+    update: {},
+    create: {
+      id: "lead-fatima-nasir",
+      source: "REQUEST_VIEWING",
+      status: "VIEWING_SCHEDULED",
+      name: "Fatima Nasir",
+      phone: "+923089012345",
+      phoneVerified: true,
+      verifiedAt: daysAgo(3),
+      message: "Looking forward to the visit.",
+      listingId: listingIdBySlug.get("e-7-house-9-20cr"),
+      assignedAgentId: ahmed.id,
+      createdAt: daysAgo(3),
+      lastActivityAt: daysAgo(1),
+    },
+  });
+  await prisma.leadActivity.createMany({
+    skipDuplicates: true,
+    data: [
+      { id: "activity-fatima-1", leadId: fatima.id, type: "PHONE_VERIFIED", message: "Phone number verified via OTP.", createdAt: daysAgo(3) },
+      { id: "activity-fatima-2", leadId: fatima.id, type: "VIEWING_REQUESTED", message: "Requested a viewing for E-7 · PKR 9.20 Crore.", createdAt: daysAgo(3) },
+      { id: "activity-fatima-3", leadId: fatima.id, type: "VIEWING_SCHEDULED", message: "Viewing scheduled with Ahmed Raza.", createdAt: daysAgo(1) },
+    ],
+  });
+  await prisma.viewing.upsert({
+    where: { id: "viewing-fatima-1" },
+    update: {},
+    create: {
+      id: "viewing-fatima-1",
+      leadId: fatima.id,
+      listingId: listingIdBySlug.get("e-7-house-9-20cr") as string,
+      agentId: ahmed.id,
+      status: "SCHEDULED",
+      scheduledAt: (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 2);
+        return d;
+      })(),
       createdAt: daysAgo(1),
     },
   });
