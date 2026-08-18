@@ -228,7 +228,9 @@ model OtpChallenge {
   attempts   Int       @default(0)
   expiresAt  DateTime
   consumedAt DateTime?
+  ip         String? // per-IP rate limiting (§8) — best-effort, from x-forwarded-for
   createdAt  DateTime  @default(now())
 
   @@index([phone])
+  @@index([ip])
 }

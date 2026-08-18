@@ -30,6 +30,7 @@ type ListingWithPhotos = Listing & { photos: Photo[] };
  * Client Component. */
 export function toPropertyCardListing(listing: ListingWithPhotos): PropertyCardListing {
   return {
+    id: listing.id,
     slug: listing.slug,
     title: listing.title,
     propertyType: listing.propertyType,

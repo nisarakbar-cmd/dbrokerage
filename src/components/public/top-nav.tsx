@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ExternalLink, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MarketUpdatesDialog } from "@/components/public/market-updates-dialog";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -50,6 +51,7 @@ function InvestLink({ className }: { className?: string }) {
 
 export function TopNav() {
   const [open, setOpen] = useState(false);
+  const [marketUpdatesOpen, setMarketUpdatesOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -76,13 +78,7 @@ export function TopNav() {
           <Link href="/admin/login" className="text-sm font-medium text-text-muted hover:text-text">
             Log In
           </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              // TODO(M3): open MarketUpdatesDialog (source=MARKET_UPDATES)
-            }}
-          >
+          <Button variant="outline" size="sm" onClick={() => setMarketUpdatesOpen(true)}>
             Sign Up
           </Button>
         </div>
@@ -145,13 +141,15 @@ export function TopNav() {
             className="mt-2 w-full"
             onClick={() => {
               setOpen(false);
-              // TODO(M3): open MarketUpdatesDialog (source=MARKET_UPDATES)
+              setMarketUpdatesOpen(true);
             }}
           >
             Sign Up
           </Button>
         </div>
       </div>
+
+      <MarketUpdatesDialog open={marketUpdatesOpen} onOpenChange={setMarketUpdatesOpen} />
     </header>
   );
 }

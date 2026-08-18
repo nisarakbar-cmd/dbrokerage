@@ -1,28 +1,32 @@
-export interface RateLimitResult {
-  success: boolean;
-  remaining: number;
+import { db } from "@/lib/db";
+
+interface RateLimitParams {
+  phone?: string;
+  ip?: string;
+}
+
+interface RateLimitOptions {
+  limit: number;
+  windowMs: number;
 }
 
 /**
- * Per-phone / per-IP limiter for OTP requests (§8). Stubbed with an
- * in-memory window for M0 — M3 backs this with OtpChallenge rows so it
- * survives across server instances.
+ * DB-backed count-over-window limiter for OTP requests (§8) — counts prior
+ * OtpChallenge rows for the given phone/ip within the window. A plain count
+ * query rather than an in-memory bucket, so it holds across server
+ * instances/restarts.
  */
-export async function checkRateLimit(
-  key: string,
-  { limit, windowMs }: { limit: number; windowMs: number }
-): Promise<RateLimitResult> {
-  const now = Date.now();
-  const hits = (buckets.get(key) ?? []).filter((t) => now - t < windowMs);
-
-  if (hits.length >= limit) {
-    buckets.set(key, hits);
-    return { success: false, remaining: 0 };
-  }
-
-  hits.push(now);
-  buckets.set(key, hits);
-  return { success: true, remaining: limit - hits.length };
+export async function checkOtpRateLimit(
+  params: RateLimitParams,
+  { limit, windowMs }: RateLimitOptions
+): Promise<boolean> {
+  const windowStart = new Date(Date.now() - windowMs);
+  const count = await db.otpChallenge.count({
+    where: {
+      createdAt: { gte: windowStart },
+      ...(params.phone ? { phone: params.phone } : {}),
+      ...(params.ip ? { ip: params.ip } : {}),
+    },
+  });
+  return count < limit;
 }
-
-const buckets = new Map<string, number[]>();

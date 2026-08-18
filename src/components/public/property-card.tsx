@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Calendar, MapPin } from "lucide-react";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { TierBadge } from "@/components/ui/tier-badge";
 import { AvailabilityDot, StatusPill } from "@/components/ui/status-pill";
 import { WhatsAppIcon } from "@/components/ui/icons";
+import { LeadDialog } from "@/components/public/lead-dialog";
 import { AVAILABILITY_LABEL, formatPriceRupees, formatSize } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +17,7 @@ export interface PropertyCardListing
   extends Omit<
     Pick<
       Listing,
+      | "id"
       | "slug"
       | "title"
       | "propertyType"
@@ -46,6 +49,14 @@ export function PropertyCard({ listing, className }: PropertyCardProps) {
   const photo = listing.photos[0];
   const isPlot = listing.propertyType === "PLOT";
   const href = `/property/${listing.slug}`;
+  const [dialogSource, setDialogSource] = useState<"REQUEST_VIEWING" | "CONTACT_AGENT" | null>(null);
+
+  const listingContext = {
+    id: listing.id,
+    title: listing.title,
+    areaLabel: listing.areaLabel,
+    price: formatPriceRupees(listing.priceRupees),
+  };
 
   return (
     <article className={cn("overflow-hidden rounded-xl border border-border bg-bg-surface", className)}>
@@ -100,9 +111,7 @@ export function PropertyCard({ listing, className }: PropertyCardProps) {
             variant="viewing"
             size="sm"
             className="flex-1"
-            onClick={() => {
-              // TODO(M3): open LeadDialog (source=REQUEST_VIEWING, listingId=listing.slug)
-            }}
+            onClick={() => setDialogSource("REQUEST_VIEWING")}
           >
             <Calendar />
             Request a Viewing
@@ -111,15 +120,23 @@ export function PropertyCard({ listing, className }: PropertyCardProps) {
             variant="contact"
             size="sm"
             className="flex-1"
-            onClick={() => {
-              // TODO(M3): open LeadDialog (source=CONTACT_AGENT, listingId=listing.slug)
-            }}
+            onClick={() => setDialogSource("CONTACT_AGENT")}
           >
             <WhatsAppIcon />
             Contact Agent
           </Button>
         </div>
       </div>
+
+      {dialogSource && (
+        <LeadDialog
+          key={dialogSource}
+          open
+          onOpenChange={(next) => !next && setDialogSource(null)}
+          source={dialogSource}
+          listing={listingContext}
+        />
+      )}
     </article>
   );
 }

@@ -139,7 +139,15 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
           <p className="text-2xl font-semibold tabular-nums text-text">
             {formatPriceRupees(listing.priceRupees)}
           </p>
-          <ListingCta tier={listing.tier} slug={listing.slug} />
+          <ListingCta
+            tier={listing.tier}
+            listing={{
+              id: listing.id,
+              title: listing.title,
+              areaLabel: listing.areaLabel,
+              price: formatPriceRupees(listing.priceRupees),
+            }}
+          />
         </aside>
       </div>
     </div>

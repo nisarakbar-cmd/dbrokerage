@@ -23,6 +23,7 @@ const PIPELINE_STAGES = [
 
 const SAMPLE_LISTINGS: PropertyCardListing[] = [
   {
+    id: "dha-phase-2-house-8-75cr",
     slug: "dha-phase-2-house-8-75cr",
     title: "5-Bedroom House in DHA Phase 2",
     propertyType: "HOUSE",
@@ -37,6 +38,7 @@ const SAMPLE_LISTINGS: PropertyCardListing[] = [
     photos: [{ url: "https://picsum.photos/seed/dha-phase-2-house-8-75cr/1200/800", alt: null }],
   },
   {
+    id: "f-11-1-apartment-4-20cr",
     slug: "f-11-1-apartment-4-20cr",
     title: "3-Bedroom Apartment in F-11/1",
     propertyType: "APARTMENT",
@@ -51,6 +53,7 @@ const SAMPLE_LISTINGS: PropertyCardListing[] = [
     photos: [{ url: "https://picsum.photos/seed/f-11-1-apartment-4-20cr/1200/800", alt: null }],
   },
   {
+    id: "bahria-town-phase-7-plot-2-85cr",
     slug: "bahria-town-phase-7-plot-2-85cr",
     title: "10 Marla Residential Plot in Bahria Town Phase 7",
     propertyType: "PLOT",
@@ -65,6 +68,7 @@ const SAMPLE_LISTINGS: PropertyCardListing[] = [
     photos: [{ url: "https://picsum.photos/seed/bahria-town-phase-7-plot-2-85cr/1200/800", alt: null }],
   },
   {
+    id: "e-11-4-house-6-10cr",
     slug: "e-11-4-house-6-10cr",
     title: "4-Bedroom House in E-11/4",
     propertyType: "HOUSE",
