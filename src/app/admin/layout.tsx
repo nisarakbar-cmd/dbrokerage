@@ -5,7 +5,9 @@ export default function AdminLayout({
 }>) {
   return (
     <div className="min-h-screen bg-bg-base">
-      {/* AdminSidebar + AdminTopbar land in M4 */}
+      {/* Deliberately minimal — /admin/login renders directly under this
+          layout with no chrome. The sidebar/topbar shell lives in
+          admin/(dashboard)/layout.tsx, wrapping only the gated pages. */}
       {children}
     </div>
   );

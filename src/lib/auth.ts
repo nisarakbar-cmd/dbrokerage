@@ -1,8 +1,8 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import type { JWT } from "next-auth/jwt";
 import { db } from "@/lib/db";
 import { verifyPassword } from "@/lib/password";
+import { authConfig } from "@/lib/auth.config";
 
 declare module "next-auth" {
   interface User {
@@ -18,11 +18,8 @@ declare module "next-auth" {
   }
 }
 
-type AppJwt = JWT & { role?: string };
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  session: { strategy: "jwt" },
-  pages: { signIn: "/admin/login" },
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -44,17 +41,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    jwt({ token, user }) {
-      const t = token as AppJwt;
-      if (user) t.role = user.role;
-      return t;
-    },
-    session({ session, token }) {
-      const t = token as AppJwt;
-      session.user.id = t.sub as string;
-      session.user.role = t.role;
-      return session;
-    },
-  },
 });

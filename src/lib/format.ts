@@ -60,3 +60,18 @@ export function sizeToSqft(value: number, unit: SizeUnit): number {
       return value;
   }
 }
+
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+/** Formats a timestamp as relative time, e.g. "3h ago", "2d ago". */
+export function formatRelativeTime(date: Date): string {
+  const diffMs = Date.now() - date.getTime();
+
+  if (diffMs < MINUTE) return "just now";
+  if (diffMs < HOUR) return `${Math.floor(diffMs / MINUTE)}m ago`;
+  if (diffMs < DAY) return `${Math.floor(diffMs / HOUR)}h ago`;
+  if (diffMs < 30 * DAY) return `${Math.floor(diffMs / DAY)}d ago`;
+  return formatDate(date);
+}
